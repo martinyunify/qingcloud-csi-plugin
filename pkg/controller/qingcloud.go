@@ -7,16 +7,10 @@ import (
 	"github.com/yunify/qingcloud-sdk-go/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"hash/adler32"
 )
 
-const (
-	kib    uint64 = 1024
-	mib    uint64 = kib * 1024
-	gib    uint64 = mib * 1024
-	gib100 uint64 = gib * 100
-	tib    uint64 = gib * 1024
-	tib100 uint64 = tib * 100
-)
+
 
 //QingCloudCSIControllerServer qingcloud node csi server
 type QingCloudCSIControllerServer struct {
@@ -26,11 +20,38 @@ type QingCloudCSIControllerServer struct {
 
 func (server *QingCloudCSIControllerServer) CreateVolume(ctx context.Context, request *csi.CreateVolumeRequest) (response *csi.CreateVolumeResponse, err error) {
 	capacityRange := request.GetCapacityRange()
-	if capacityRange.GetLimitBytes()%(10*gib) != 0 {
-		err = status.Errorf(codes.OutOfRange, "%d can't be devided by 10GB", capacityRange.GetLimitBytes())
+	limit:=capacityRange.GetLimitBytes()
+	if limit < 10 * gib || limit > 500 * gib{
+		err = status.Errorf(codes.OutOfRange, "limit %d is less than 10GB or bigger than 500GB", limit)
+	}
+
+	if limit %(10*gib) != 0 {
+		err = status.Errorf(codes.OutOfRange, "%d can't be devided by 10GB", limit)
+	}
+
+	required:= capacityRange.RequiredBytes
+	if required > 500 *gib {
+		err = status.Errorf(codes.OutOfRange, "required storage %d is bigger than the upper bound of size limit 500GB",required)
+	}
+
+	CreateVolumeRequest:= service.CreateVolumesInput{
+		Count: service.Int(1),
+		VolumeType: service.Int(0),
+		Size: service.Int(int(limit/gib)),
+		VolumeName: service.String(request.Name),
+	}
+	apiresponse,err:=server.volumeService.CreateVolumes(&CreateVolumeRequest)
+	if err != nil {
+
+	}
+	for _,volume := range apiresponse.Volumes {
+		response.VolumeInfo = &csi.VolumeInfo{
+			Id: *volume,
+		}
 	}
 
 }
+
 func (server *QingCloudCSIControllerServer) DeleteVolume(context.Context, *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 
 }

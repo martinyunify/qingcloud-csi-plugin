@@ -28,8 +28,8 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "qingcloud-csi-plugin",
 	Short: "QingCloud Iaas Storage plugin for container storage",
-	Long: `A plugin which implementes container storage interface to manipulate iaas storage resource`,
-	Run: func(cmd *cobra.Command, args []string) { },
+	Long:  `A plugin which implementes container storage interface to manipulate iaas storage resource`,
+	Run:   func(cmd *cobra.Command, args []string) {},
 }
 
 func Execute() {
@@ -39,7 +39,7 @@ func Execute() {
 	}
 }
 
-func init() { 
+func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
